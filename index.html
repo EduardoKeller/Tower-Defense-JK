@@ -1999,6 +1999,73 @@ function initState() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// RESPONSIVE CANVAS SIZE CALCULATION
+// ═══════════════════════════════════════════════════════════════
+const GAME_BASE_WIDTH = 1500;
+const GAME_BASE_HEIGHT = 780;
+const GAME_ASPECT_RATIO = GAME_BASE_WIDTH / GAME_BASE_HEIGHT;
+
+function calculateCanvasSize() {
+  const stage = document.getElementById('stage');
+  const topbar = document.getElementById('topbar');
+  const bottombar = document.getElementById('bottombar');
+  
+  if (!stage || !topbar || !bottombar) {
+    return { width: GAME_BASE_WIDTH, height: GAME_BASE_HEIGHT, scale: 1 };
+  }
+  
+  // Calcula espaço disponível
+  const availableWidth = window.innerWidth;
+  const availableHeight = window.innerHeight - topbar.offsetHeight - bottombar.offsetHeight;
+  
+  let canvasWidth = availableWidth;
+  let canvasHeight = availableHeight;
+  
+  // Mantém aspect ratio, limitando ao tamanho disponível
+  const currentAspect = canvasWidth / canvasHeight;
+  
+  if (currentAspect > GAME_ASPECT_RATIO) {
+    // Tela mais larga que necessário
+    canvasWidth = canvasHeight * GAME_ASPECT_RATIO;
+  } else {
+    // Tela mais alta que necessário
+    canvasHeight = canvasWidth / GAME_ASPECT_RATIO;
+  }
+  
+  // Calcula escala relativa ao tamanho base
+  const scale = canvasWidth / GAME_BASE_WIDTH;
+  
+  return {
+    width: canvasWidth,
+    height: canvasHeight,
+    scale: Math.max(0.5, Math.min(2, scale)) // Limita entre 50% e 200%
+  };
+}
+
+function applyCanvasSize() {
+  const canvas = document.getElementById('c');
+  const size = calculateCanvasSize();
+  
+  // Define tamanho interno (resolução do desenho)
+  canvas.width = GAME_BASE_WIDTH;
+  canvas.height = GAME_BASE_HEIGHT;
+  
+  // Define tamanho visual (CSS)
+  canvas.style.width = size.width + 'px';
+  canvas.style.height = size.height + 'px';
+  
+  // Centraliza o canvas
+  const stage = document.getElementById('stage');
+  if (stage) {
+    stage.style.display = 'flex';
+    stage.style.alignItems = 'center';
+    stage.style.justifyContent = 'center';
+  }
+  
+  return size.scale;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // TILE RENDERING
 // ═══════════════════════════════════════════════════════════════
 const canvas = document.getElementById('c');
@@ -3644,10 +3711,23 @@ document.getElementById('stage').addEventListener('click', e => {
 // INIT
 // ═══════════════════════════════════════════════════════════════
 loadImages(() => {
-  canvas.width  = 1500;
-  canvas.height = 780;
+  // Aplica tamanho responsivo
+  applyCanvasSize();
+  
   // Don't start game loop yet — wait for start screen
   startScreenInit();
+});
+
+// Reajusta tamanho quando a janela muda
+window.addEventListener('resize', () => {
+  applyCanvasSize();
+});
+
+// Reajusta ao rodar (mobile)
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    applyCanvasSize();
+  }, 100);
 });
 
 // ═══════════════════════════════════════════════════════════════
